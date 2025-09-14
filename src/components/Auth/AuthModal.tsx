@@ -73,7 +73,10 @@ const AuthModal: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      if (!res.ok) throw new Error('Failed');
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(errText || 'Failed');
+      }
       setOtpSent(true);
     } catch (err) {
       dispatch(loginFailure());
@@ -128,8 +131,11 @@ const AuthModal: React.FC = () => {
               <Typography
                 variant="h3"
                 sx={{
-                  fontWeight: 700,
-                  color: 'primary.main',
+                  fontWeight: 800,
+                  background: 'linear-gradient(90deg, #fff 0%, #1db954 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  letterSpacing: 0.5,
                   mb: 1,
                 }}
               >
@@ -137,6 +143,9 @@ const AuthModal: React.FC = () => {
               </Typography>
               <Typography variant="h6" color="text.secondary">
                 Welcome to your music world
+              </Typography>
+              <Typography variant="body2" color="success.light">
+                Demo login: Email OTP is 123456
               </Typography>
             </Box>
 

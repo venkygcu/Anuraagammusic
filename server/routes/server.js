@@ -14,7 +14,8 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const app = express();
-const PORT = process.env.PORT ? Number(process.env.PORT) : 5000;
+// Always respect PORT if provided, otherwise default to 5000 (works for both dev and prod)
+const PORT = Number(process.env.PORT) || 5000;
 
 // Basic authentication middleware (demo only)
 app.use((req, res, next) => {
@@ -49,7 +50,7 @@ app.use('/otp', otpRouter);
 // Serve frontend (production build)
 const clientDist = path.resolve(__dirname, '../../dist');
 app.use(express.static(clientDist));
-app.get('*', (req, res) => {
+app.get(/.*/, (req, res) => {
   res.sendFile(path.join(clientDist, 'index.html'));
 });
 

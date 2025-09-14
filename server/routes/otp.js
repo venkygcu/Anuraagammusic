@@ -4,15 +4,26 @@ import nodemailer from 'nodemailer';
 const router = express.Router();
 const otps = {};
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.ethereal.email',
-  port: Number(process.env.SMTP_PORT || 587),
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER || 'your_ethereal_user',
-    pass: process.env.SMTP_PASS || 'your_ethereal_pass',
-  },
-});
+const smtpUser = process.env.SMTP_USER || '';
+const smtpPass = process.env.SMTP_PASS || '';
+const looksPlaceholder = /your_ethereal_/i.test(smtpUser) || /your_ethereal_/i.test(smtpPass);
+const isDemo = !smtpUser || !smtpPass || looksPlaceholder;
+let transporter;
+if (isDemo) {
+  // Demo mode: do not actually send email, just resolve
+  transporter = { sendMail: async () => Promise.resolve() };
+  console.log('[OTP] Running in DEMO mode. Emails are not sent. Use OTP 123456.');
+} else {
+  transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST || 'smtp.ethereal.email',
+    port: Number(process.env.SMTP_PORT || 587),
+    secure: false,
+    auth: {
+      user: smtpUser,
+      pass: smtpPass,
+    },
+  });
+}
 
 // Send OTP to email
 router.post('/send-otp-email', async (req, res) => {
@@ -25,10 +36,13 @@ router.post('/send-otp-email', async (req, res) => {
       from: process.env.MAIL_FROM || 'no-reply@anuraagam.com',
       to: email,
       subject: 'Your Anuraagam OTP',
-      text: `Your OTP is ${otp}. It expires in 10 minutes.`,
+      text: `Your OTP is ${isDemo ? '123456' : otp}. It expires in 10 minutes.`,
     });
-    res.json({ success: true });
+    // In demo mode, always use fixed OTP for easy testing
+    otps[email] = isDemo ? '123456' : otp;
+    res.json({ success: true, demo: isDemo });
   } catch (e) {
+    console.error('OTP email send error:', e);
     res.status(500).json({ error: 'Failed to send OTP' });
   }
 });
