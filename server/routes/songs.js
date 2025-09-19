@@ -44,7 +44,7 @@ const staticSongs = [
 import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const downloadDir = path.resolve(__dirname, '../../download');
+const downloadDir = path.resolve(__dirname, '../../../songs');
 let localSongs = [];
 try {
   const files = fs.readdirSync(downloadDir);

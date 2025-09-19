@@ -104,7 +104,8 @@ const AuthModal: React.FC = () => {
   };
 
   const isEmailValid = email.includes('@') && email.includes('.');
-  const isMobileValid = mobile.length >= 10;
+  // Basic mobile validation: 10+ digits or starts with + followed by digits
+const isMobileValid = /^\+?\d{10,}$/.test(mobile.trim());
 
   return (
     <Box

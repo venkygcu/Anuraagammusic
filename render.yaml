@@ -7,8 +7,6 @@ services:
     startCommand: npm run server
     autoDeploy: true
     envVars:
-      - key: PORT
-        value: 10000
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT

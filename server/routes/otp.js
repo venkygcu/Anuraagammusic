@@ -57,14 +57,54 @@ router.post('/verify-otp-email', (req, res) => {
   res.status(401).json({ error: 'Invalid OTP' });
 });
 
-// Send OTP to mobile (demo: just store)
-router.post('/send-otp-mobile', (req, res) => {
+// Send OTP to mobile via SMS (Twilio if configured; demo fallback)
+router.post('/send-otp-mobile', async (req, res) => {
   const { mobile } = req.body;
   if (!mobile) return res.status(400).json({ error: 'Mobile required.' });
+
+  // Generate OTP
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  otps[mobile] = otp;
-  // TODO: Integrate Twilio or similar SMS provider in production
-  res.json({ success: true });
+
+  // Twilio configuration via env vars
+  const sid = process.env.TWILIO_ACCOUNT_SID;
+  const token = process.env.TWILIO_AUTH_TOKEN;
+  const from = process.env.TWILIO_FROM;
+  const defaultCode = process.env.TWILIO_DEFAULT_COUNTRY_CODE || '';
+  const canSms = !!(sid && token && from);
+
+  // Normalize phone number to E.164 if possible
+  const raw = String(mobile).trim();
+  const digits = raw.replace(/\D/g, '');
+  const to = raw.startsWith('+')
+    ? raw
+    : (defaultCode ? `${defaultCode}${digits}` : null);
+
+  if (!to) {
+    return res.status(400).json({
+      error: 'Provide E.164 number (e.g., +14155552671) or set TWILIO_DEFAULT_COUNTRY_CODE in .env'
+    });
+  }
+
+  try {
+    if (canSms) {
+      const { default: twilio } = await import('twilio');
+      const client = twilio(sid, token);
+      await client.messages.create({
+        from,
+        to,
+        body: `Your Anuraagam OTP is ${otp}. It expires in 10 minutes.`,
+      });
+      otps[mobile] = otp;
+      return res.json({ success: true });
+    } else {
+      console.log('[OTP] SMS DEMO mode. No SMS provider configured. Using fixed OTP 123456.');
+      otps[mobile] = '123456';
+      return res.json({ success: true, demo: true });
+    }
+  } catch (e) {
+    console.error('OTP SMS send error:', e);
+    return res.status(500).json({ error: 'Failed to send OTP' });
+  }
 });
 
 // Verify OTP for mobile

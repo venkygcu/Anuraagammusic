@@ -10,8 +10,12 @@ import otpRouter from './otp.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load env vars from project .env
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+// Load env vars from project .env (override any pre-set PORT like Render/Host assigns)
+// Also allow reading from repo root .env as fallback if nested .env missing
+const envLoaded = dotenv.config({ path: path.resolve(__dirname, '../../.env'), override: true });
+if (envLoaded.error) {
+  dotenv.config({ path: path.resolve(__dirname, '../../../.env'), override: false });
+}
 
 const app = express();
 // Always respect PORT if provided, otherwise default to 5000 (works for both dev and prod)
@@ -28,7 +32,8 @@ app.use(cors({ origin: true, credentials: true }));
 // Serve static audio files with proper headers for streaming
 app.use(
   '/download',
-  express.static(path.resolve(__dirname, '../../download'), {
+  // Point to the actual filesystem folder containing audio files (repo-level /songs)
+  express.static(path.resolve(__dirname, '../../../songs'), {
     setHeaders(res, filePath) {
       if (filePath.endsWith('.m4a')) {
         res.setHeader('Content-Type', 'audio/mp4');
